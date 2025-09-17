@@ -1,0 +1,36 @@
+{
+    "name": "mshuo/reply-to-see",
+    "description": "Hide content until users reply — encourage engagement by revealing hidden posts or media only after replying. ",
+    "type": "flarum-extension",
+    "keywords": ["flarum", "flarum-extension", "reply", "hide"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "MShuo",
+            "email": "shuo8998@126.com"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/MShuoo/reply-to-see/issues",
+        "source": "https://github.com/MShuoo/reply-to-see"
+    },
+    "require": {
+        "flarum/core": "^1.8"
+    },
+    "autoload": {
+        "psr-4": {
+            "Mshuo\\ReplyToSee\\": "src/"
+        }
+    },
+    "extra": {
+        "flarum-extension": {
+            "title": "Reply to see",
+            "category": "feature",
+            "icon": {
+                "name": "fas fa-comment-slash",
+                "color": "#fff",
+                "backgroundColor": "#D3241C"
+            }
+        }
+    }
+}

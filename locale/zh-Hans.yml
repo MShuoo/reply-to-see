@@ -1,0 +1,19 @@
+mshuo-reply-to-see:
+  admin:
+    settings:
+      reply-type-lable: 回复显示选项
+      reply-type-lable-helpText: 回复主题：用户在帖子内参与讨论即可查看隐藏内容，回复指定帖子：用户必须直接回复含隐藏内容的帖子才能查看
+      theme-type-parse-lable: 回复主题时帖子的解析模式
+      theme-type-parse-helpText: 仅在【回复显示选项】为【回复主题】时生效
+    permissions:
+      reply-to-see-lable: 查看隐藏内容无需回复
+    reply-type:
+      0: 回复主题，显示隐藏内容（默认）
+      1: 回复指定帖子，显示隐藏内容
+    theme-type-parse:
+      0: 仅限首帖 (默认,性能最好)
+      1: 所有帖子
+  forum:
+      must-reply-specific: 回复此内容可见
+      must-reply-theme: 参与讨论后可见
+      insert-reply-to-see: 回复以查看隐藏内容
