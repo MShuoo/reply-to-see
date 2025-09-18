@@ -80,105 +80,102 @@ class HideContentPost
     {
         return '<div class="ReplyToSee-Hidden">'.$this->translator->trans('mshuo-reply-to-see.forum.must-reply-theme').'</div>';
     }
-
-    /*
-    private function replaceReplyTags_o(string $contentHtml, string $replaceHtml): string
+   
+    private function replaceReplyTags(string $s, string $replace): string
     {
         static $openTag = '[REPLY]';
         static $closeTag = '[/REPLY]';
         static $openLen = 7;
-        static $closeLen = 8;
-        $len = strlen($contentHtml);
-        if ($len === 0) return $contentHtml;
-        $result = [];
-        $i = 0;
-        while ($i < $len) {
-            $posOpen = strpos($contentHtml, $openTag, $i);
-            if ($posOpen === false) {
-                $result[] = substr($contentHtml, $i);
-                break;
-            }
-            if ($posOpen > $i) {
-                $result[] = substr($contentHtml, $i, $posOpen - $i);
-            }
-            $depth = 1;
-            $start = $posOpen + $openLen;
-            $j = $start;
-            while ($j < $len && $depth > 0) {
-                if ($j + $openLen <= $len && substr_compare($contentHtml, $openTag, $j, $openLen) === 0) {
-                    $depth++;
-                    $j += $openLen;
-                } elseif ($j + $closeLen <= $len && substr_compare($contentHtml, $closeTag, $j, $closeLen) === 0) {
-                    $depth--;
-                    if ($depth === 0) {
-                        $result[] = $replaceHtml;
-                        $i = $j + $closeLen;
-                        break;
-                    }
-                    $j += $closeLen;
-                } else {
-                    $j++;
-                }
-            }
-            if ($depth > 0) {
-                $result[] = substr($contentHtml, $posOpen);
-                break;
-            }
-        }
-
-        return implode('', $result);
-    }
-    private function replaceReplyTags_o1(string $s, string $replace): string
-    {
-        static $open  = '[REPLY]';
-        static $close = '[/REPLY]';
-        static $oLen  = 7;
-        static $cLen  = 8;
+        static $closeLen =8;
+        if (strpos($s, $openTag) === false) return $s;
+        if (strpos($s, $closeTag) === false) return $s;
+        $result = '';
+        $stack = [];
+        $pos = 0;
         $len = strlen($s);
         if ($len === 0) return $s;
-        if (strpos($s, $open) === false) return $s;
-        $parts = [];
-        $i = 0;
-        while ($i < $len) {
-            $pOpen = strpos($s, $open, $i);
-            if ($pOpen === false) {
-                $parts[] = substr($s, $i);
+        while ($pos < $len) {
+            $openPos = strpos($s, $openTag, $pos);
+            $closePos = strpos($s, $closeTag, $pos);
+            if ($openPos === false && $closePos === false) {
+                $result .= substr($s, $pos);
                 break;
             }
-            if ($pOpen > $i) {
-                $parts[] = substr($s, $i, $pOpen - $i);
-            }
-            $depth = 1;
-            $j = $pOpen + $oLen;
-            while ($j < $len && $depth > 0) {
-                $nextOpen  = strpos($s, $open,  $j);
-                $nextClose = strpos($s, $close, $j);
-                if ($nextClose === false) {
-                    $parts[] = substr($s, $pOpen);
-                    $i = $len;
-                    break 2;
-                }
-                if ($nextOpen === false || $nextClose < $nextOpen) {
-                    $depth--;
-                    $j = $nextClose + $cLen;
-                    if ($depth === 0) {
-                        $parts[] = $replace;
-                        $i = $j;
-                    }
+            if ($openPos !== false && ($closePos === false || $openPos < $closePos)) {
+                $result .= substr($s, $pos, $openPos - $pos);
+                $stack[] = strlen($result);
+                $pos = $openPos + $openLen;
+            } else {
+                $result .= substr($s, $pos, $closePos - $pos);
+                if (!empty($stack)) {
+                    $lastPos = array_pop($stack);
+                    $result = substr($result, 0, $lastPos) . $replace;
                 } else {
-                    $depth++;
-                    $j = $nextOpen + $oLen;
+                    $result .= $closeTag;
                 }
-            }
-            if ($depth > 0) {
-                $parts[] = substr($s, $pOpen);
-                break;
+                $pos = $closePos + $closeLen;
             }
         }
-        return implode('', $parts);
+        if (!empty($stack)) {
+            $fixedResult = '';
+            $lastPos = 0;
+            foreach ($stack as $openTagStart) {
+                $fixedResult .= substr($result, $lastPos, $openTagStart - $lastPos) . $openTag;
+                $lastPos = $openTagStart;
+            }
+            $fixedResult .= substr($result, $lastPos);
+            return $fixedResult;
+        }
+        return $result;
     }
-    */
-    function replaceReplyTags(string $s, string $replace): string
+    private function stripReplyTags(string $s): string
+    {
+        static $openTag  = '[REPLY]';
+        static $closeTag = '[/REPLY]';
+        static $openLen  = 7;
+        static $closeLen = 8;
+        if (strpos($s, $openTag) === false) return $s;
+        if (strpos($s, $closeTag) === false) return $s;
+        $result = '';
+        $stack  = [];
+        $pos    = 0;
+        $len    = strlen($s);
+        if ($len === 0) return $s;
+        while ($pos < $len) {
+            $openPos  = strpos($s, $openTag, $pos);
+            $closePos = strpos($s, $closeTag, $pos);
+            if ($openPos === false && $closePos === false) {
+                $result .= substr($s, $pos);
+                break;
+            }
+            if ($openPos !== false && ($closePos === false || $openPos < $closePos)) {
+                $result .= substr($s, $pos, $openPos - $pos);
+                $stack[] = strlen($result);
+                $pos = $openPos + $openLen;
+            } else {
+                $result .= substr($s, $pos, $closePos - $pos);
+                if (!empty($stack)) {
+                    array_pop($stack);
+                } else {
+                    $result .= $closeTag;
+                }
+                $pos = $closePos + $closeLen;
+            }
+        }
+        if (!empty($stack)) {
+            $fixedResult = '';
+            $lastPos = 0;
+            foreach ($stack as $openTagStart) {
+                $fixedResult .= substr($result, $lastPos, $openTagStart - $lastPos) . $openTag;
+                $lastPos = $openTagStart;
+            }
+            $fixedResult .= substr($result, $lastPos);
+            return $fixedResult;
+        }
+        return $result;
+    }
+     /*
+    function replaceReplyTags_o(string $s, string $replace): string
     {
         $openTag  = '[REPLY]';
         $closeTag = '[/REPLY]';
@@ -220,7 +217,7 @@ class HideContentPost
         }
         return $result;
     }
-    private function stripReplyTags(string $contentHtml): string
+    private function stripReplyTags_o(string $contentHtml): string
     {
         static $openTag = '[REPLY]';
         static $closeTag = '[/REPLY]';
@@ -262,5 +259,5 @@ class HideContentPost
         }
         return $result;
     }
-    
+    */
 }
