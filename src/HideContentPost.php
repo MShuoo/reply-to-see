@@ -128,8 +128,7 @@ class HideContentPost
 
         return implode('', $result);
     }
-    */
-    private function replaceReplyTags(string $s, string $replace): string
+    private function replaceReplyTags_o1(string $s, string $replace): string
     {
         static $open  = '[REPLY]';
         static $close = '[/REPLY]';
@@ -178,6 +177,49 @@ class HideContentPost
         }
         return implode('', $parts);
     }
+    */
+    function replaceReplyTags(string $s, string $replace): string
+    {
+        $openTag  = '[REPLY]';
+        $closeTag = '[/REPLY]';
+        $openLen  = strlen($openTag);
+        $closeLen = strlen($closeTag);
+        $len = strlen($s);
+        if ($len === 0) return $s;
+        $result = '';
+        $stack = [];
+        $i = 0;
+        while ($i < $len) {
+            if ($i + $openLen <= $len && substr($s, $i, $openLen) === $openTag) {
+                $stack[] = strlen($result);
+                $i += $openLen;
+                continue;
+            }
+            if ($i + $closeLen <= $len && substr($s, $i, $closeLen) === $closeTag) {
+                if (!empty($stack)) {
+                    $pos = array_pop($stack);
+                    $result = substr($result, 0, $pos) . $replace;
+                } else {
+                    $result .= $closeTag;
+                }
+                $i += $closeLen;
+                continue;
+            }
+            $result .= $s[$i];
+            $i++;
+        }
+        if (!empty($stack)) {
+            $fixed = '';
+            $lastPos = 0;
+            foreach ($stack as $pos) {
+                $fixed .= substr($result, $lastPos, $pos - $lastPos) . $openTag;
+                $lastPos = $pos;
+            }
+            $fixed .= substr($result, $lastPos);
+            return $fixed;
+        }
+        return $result;
+    }
     private function stripReplyTags(string $contentHtml): string
     {
         static $openTag = '[REPLY]';
@@ -187,46 +229,38 @@ class HideContentPost
         $len = strlen($contentHtml);
         if ($len === 0) return $contentHtml;
         if (strpos($contentHtml, $openTag) === false) return $contentHtml;
-        $result = [];
+        $result = '';
+        $stack = [];
         $i = 0;
-        $inTag = false;
         while ($i < $len) {
-            if (!$inTag) {
-                $posOpen = strpos($contentHtml, $openTag, $i);
-                if ($posOpen === false) {
-                    $result[] = substr($contentHtml, $i);
-                    break;
-                }
-                if ($posOpen > $i) {
-                    $result[] = substr($contentHtml, $i, $posOpen - $i);
-                }
-                $inTag = true;
-                $depth = 1;
-                $i = $posOpen + $openLen;
-            } else {
-                $posOpen = strpos($contentHtml, $openTag, $i);
-                $posClose = strpos($contentHtml, $closeTag, $i);
-                if ($posOpen === false && $posClose === false) {
-                    $result[] = substr($contentHtml, $i);
-                    break;
-                }
-                if ($posOpen === false) $posOpen = $len + 1;
-                if ($posClose === false) $posClose = $len + 1;
-                if ($posOpen < $posClose) {
-                    $result[] = substr($contentHtml, $i, $posOpen - $i);
-                    $depth++;
-                    $i = $posOpen + $openLen;
-                } else {
-                    $result[] = substr($contentHtml, $i, $posClose - $i);
-                    $depth--;
-                    $i = $posClose + $closeLen;
-                    if ($depth === 0) {
-                        $inTag = false;
-                    }
-                }
+            if ($i + $openLen <= $len && substr($contentHtml, $i, $openLen) === $openTag) {
+                $stack[] = strlen($result);
+                $i += $openLen;
+                continue;
             }
+            if ($i + $closeLen <= $len && substr($contentHtml, $i, $closeLen) === $closeTag) {
+                if (!empty($stack)) {
+                    array_pop($stack);
+                } else {
+                    $result .= $closeTag;
+                }
+                $i += $closeLen;
+                continue;
+            }
+            $result .= $contentHtml[$i];
+            $i++;
         }
-        return implode('', $result);
+        if (!empty($stack)) {
+            $fixed = '';
+            $lastPos = 0;
+            foreach ($stack as $pos) {
+                $fixed .= substr($result, $lastPos, $pos - $lastPos) . $openTag;
+                $lastPos = $pos;
+            }
+            $fixed .= substr($result, $lastPos);
+            return $fixed;
+        }
+        return $result;
     }
     
 }
