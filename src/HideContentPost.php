@@ -81,19 +81,58 @@ class HideContentPost
         return '<div class="ReplyToSee-Hidden">'.$this->translator->trans('mshuo-reply-to-see.forum.must-reply-theme').'</div>';
     }
    
+
     private function replaceReplyTags(string $s, string $replace): string
     {
         static $openTag = '[REPLY]';
         static $closeTag = '[/REPLY]';
         static $openLen = 7;
         static $closeLen =8;
+        $len = strlen($s);
+        if ($len === 0) return $s;
         if (strpos($s, $openTag) === false) return $s;
         if (strpos($s, $closeTag) === false) return $s;
         $result = '';
         $stack = [];
         $pos = 0;
+        while ($pos < $len){
+            $openPos = strpos($s, $openTag, $pos);
+            $closePos = strpos($s, $closeTag, $pos);
+            if ($openPos === false && $closePos === false) {
+                $result .= substr($s, $pos);
+                break;
+            }
+            if($openPos !==false &&  ($closePos === false || $openPos < $closePos)){
+                $result .= substr($s, $pos, $openPos - $pos);
+                $stack[] = strlen($result);
+                $result .= $openTag;
+                $pos = $openPos + $openLen;
+            }else{
+                $result .= substr($s, $pos, $closePos - $pos);
+                if(!empty($stack)){
+                    $lastPos = array_pop($stack);
+                    $result = substr($result, 0, $lastPos) . $replace;
+                }else{
+                    $result .= $closeTag;
+                }
+                $pos = $closePos + $closeLen;
+            }
+        }
+        return $result;
+    }
+    private function stripReplyTags(string $s): string
+    {
+        static $openTag = '[REPLY]';
+        static $closeTag = '[/REPLY]';
+        static $openLen = 7;
+        static $closeLen = 8;
         $len = strlen($s);
         if ($len === 0) return $s;
+        if (strpos($s, $openTag) === false) return $s;
+        if (strpos($s, $closeTag) === false) return $s;
+        $result = '';
+        $stack = [];
+        $pos = 0;
         while ($pos < $len) {
             $openPos = strpos($s, $openTag, $pos);
             $closePos = strpos($s, $closeTag, $pos);
@@ -104,160 +143,20 @@ class HideContentPost
             if ($openPos !== false && ($closePos === false || $openPos < $closePos)) {
                 $result .= substr($s, $pos, $openPos - $pos);
                 $stack[] = strlen($result);
+                $result .= $openTag;
                 $pos = $openPos + $openLen;
             } else {
                 $result .= substr($s, $pos, $closePos - $pos);
                 if (!empty($stack)) {
-                    $lastPos = array_pop($stack);
-                    $result = substr($result, 0, $lastPos) . $replace;
+                    $openStart = array_pop($stack);
+                    $result = substr($result, 0, $openStart) . substr($result, $openStart+$openLen);
                 } else {
                     $result .= $closeTag;
                 }
                 $pos = $closePos + $closeLen;
             }
         }
-        if (!empty($stack)) {
-            $fixedResult = '';
-            $lastPos = 0;
-            foreach ($stack as $openTagStart) {
-                $fixedResult .= substr($result, $lastPos, $openTagStart - $lastPos) . $openTag;
-                $lastPos = $openTagStart;
-            }
-            $fixedResult .= substr($result, $lastPos);
-            return $fixedResult;
-        }
         return $result;
     }
-    private function stripReplyTags(string $s): string
-    {
-        static $openTag  = '[REPLY]';
-        static $closeTag = '[/REPLY]';
-        static $openLen  = 7;
-        static $closeLen = 8;
-        if (strpos($s, $openTag) === false) return $s;
-        if (strpos($s, $closeTag) === false) return $s;
-        $result = '';
-        $stack  = [];
-        $pos    = 0;
-        $len    = strlen($s);
-        if ($len === 0) return $s;
-        while ($pos < $len) {
-            $openPos  = strpos($s, $openTag, $pos);
-            $closePos = strpos($s, $closeTag, $pos);
-            if ($openPos === false && $closePos === false) {
-                $result .= substr($s, $pos);
-                break;
-            }
-            if ($openPos !== false && ($closePos === false || $openPos < $closePos)) {
-                $result .= substr($s, $pos, $openPos - $pos);
-                $stack[] = strlen($result);
-                $pos = $openPos + $openLen;
-            } else {
-                $result .= substr($s, $pos, $closePos - $pos);
-                if (!empty($stack)) {
-                    array_pop($stack);
-                } else {
-                    $result .= $closeTag;
-                }
-                $pos = $closePos + $closeLen;
-            }
-        }
-        if (!empty($stack)) {
-            $fixedResult = '';
-            $lastPos = 0;
-            foreach ($stack as $openTagStart) {
-                $fixedResult .= substr($result, $lastPos, $openTagStart - $lastPos) . $openTag;
-                $lastPos = $openTagStart;
-            }
-            $fixedResult .= substr($result, $lastPos);
-            return $fixedResult;
-        }
-        return $result;
-    }
-     /*
-    function replaceReplyTags_o(string $s, string $replace): string
-    {
-        $openTag  = '[REPLY]';
-        $closeTag = '[/REPLY]';
-        $openLen  = strlen($openTag);
-        $closeLen = strlen($closeTag);
-        $len = strlen($s);
-        if ($len === 0) return $s;
-        $result = '';
-        $stack = [];
-        $i = 0;
-        while ($i < $len) {
-            if ($i + $openLen <= $len && substr($s, $i, $openLen) === $openTag) {
-                $stack[] = strlen($result);
-                $i += $openLen;
-                continue;
-            }
-            if ($i + $closeLen <= $len && substr($s, $i, $closeLen) === $closeTag) {
-                if (!empty($stack)) {
-                    $pos = array_pop($stack);
-                    $result = substr($result, 0, $pos) . $replace;
-                } else {
-                    $result .= $closeTag;
-                }
-                $i += $closeLen;
-                continue;
-            }
-            $result .= $s[$i];
-            $i++;
-        }
-        if (!empty($stack)) {
-            $fixed = '';
-            $lastPos = 0;
-            foreach ($stack as $pos) {
-                $fixed .= substr($result, $lastPos, $pos - $lastPos) . $openTag;
-                $lastPos = $pos;
-            }
-            $fixed .= substr($result, $lastPos);
-            return $fixed;
-        }
-        return $result;
-    }
-    private function stripReplyTags_o(string $contentHtml): string
-    {
-        static $openTag = '[REPLY]';
-        static $closeTag = '[/REPLY]';
-        static $openLen = 7;
-        static $closeLen = 8;
-        $len = strlen($contentHtml);
-        if ($len === 0) return $contentHtml;
-        if (strpos($contentHtml, $openTag) === false) return $contentHtml;
-        $result = '';
-        $stack = [];
-        $i = 0;
-        while ($i < $len) {
-            if ($i + $openLen <= $len && substr($contentHtml, $i, $openLen) === $openTag) {
-                $stack[] = strlen($result);
-                $i += $openLen;
-                continue;
-            }
-            if ($i + $closeLen <= $len && substr($contentHtml, $i, $closeLen) === $closeTag) {
-                if (!empty($stack)) {
-                    array_pop($stack);
-                } else {
-                    $result .= $closeTag;
-                }
-                $i += $closeLen;
-                continue;
-            }
-            $result .= $contentHtml[$i];
-            $i++;
-        }
-        if (!empty($stack)) {
-            $fixed = '';
-            $lastPos = 0;
-            foreach ($stack as $pos) {
-                $fixed .= substr($result, $lastPos, $pos - $lastPos) . $openTag;
-                $lastPos = $pos;
-            }
-            $fixed .= substr($result, $lastPos);
-            return $fixed;
-        }
-        return $result;
-    }
-    */
+
 }
