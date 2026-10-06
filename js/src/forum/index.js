@@ -17,7 +17,7 @@ app.initializers.add('mshuo-reply-to-see', () => {
             if (!discussionId) return;
 
             return refreshHiddenPosts(discussionId, saved);
-        }).catch(() => {});
+        });
     });
 
     extend(TextEditor.prototype, 'toolbarItems', function (items) {
