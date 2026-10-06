@@ -87,36 +87,38 @@ class HideContentPost
         static $openTag = '[REPLY]';
         static $closeTag = '[/REPLY]';
         static $openLen = 7;
-        static $closeLen =8;
+        static $closeLen = 8;
         $len = strlen($s);
-        if ($len === 0) return $s;
-        if (strpos($s, $openTag) === false) return $s;
-        if (strpos($s, $closeTag) === false) return $s;
+        if ($len === 0 || (strpos($s, $openTag) === false && strpos($s, $closeTag) === false)) {
+            return $s;
+        }
         $result = '';
         $stack = [];
         $pos = 0;
-        while ($pos < $len){
+        while ($pos < $len) {
             $openPos = strpos($s, $openTag, $pos);
             $closePos = strpos($s, $closeTag, $pos);
             if ($openPos === false && $closePos === false) {
                 $result .= substr($s, $pos);
                 break;
             }
-            if($openPos !==false &&  ($closePos === false || $openPos < $closePos)){
+            if ($openPos !== false && ($closePos === false || $openPos < $closePos)) {
                 $result .= substr($s, $pos, $openPos - $pos);
                 $stack[] = strlen($result);
                 $result .= $openTag;
                 $pos = $openPos + $openLen;
-            }else{
+            } else {
                 $result .= substr($s, $pos, $closePos - $pos);
-                if(!empty($stack)){
+                if (!empty($stack)) {
                     $lastPos = array_pop($stack);
                     $result = substr($result, 0, $lastPos) . $replace;
-                }else{
-                    $result .= $closeTag;
                 }
                 $pos = $closePos + $closeLen;
             }
+        }
+        // 未闭合时从最早的开始标签截到文末，避免后面的正文漏出
+        if (!empty($stack)) {
+            $result = substr($result, 0, $stack[0]) . $replace;
         }
         return $result;
     }
@@ -127,9 +129,9 @@ class HideContentPost
         static $openLen = 7;
         static $closeLen = 8;
         $len = strlen($s);
-        if ($len === 0) return $s;
-        if (strpos($s, $openTag) === false) return $s;
-        if (strpos($s, $closeTag) === false) return $s;
+        if ($len === 0 || (strpos($s, $openTag) === false && strpos($s, $closeTag) === false)) {
+            return $s;
+        }
         $result = '';
         $stack = [];
         $pos = 0;
@@ -149,12 +151,15 @@ class HideContentPost
                 $result .= substr($s, $pos, $closePos - $pos);
                 if (!empty($stack)) {
                     $openStart = array_pop($stack);
-                    $result = substr($result, 0, $openStart) . substr($result, $openStart+$openLen);
-                } else {
-                    $result .= $closeTag;
+                    $result = substr($result, 0, $openStart) . substr($result, $openStart + $openLen);
                 }
                 $pos = $closePos + $closeLen;
             }
+        }
+        // 从后往前删落单的开始标签，前面的位置才不会被后面的删除弄偏
+        while (!empty($stack)) {
+            $openStart = array_pop($stack);
+            $result = substr($result, 0, $openStart) . substr($result, $openStart + $openLen);
         }
         return $result;
     }
