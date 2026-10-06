@@ -5,6 +5,8 @@ namespace Mshuo\ReplyToSee;
 use Flarum\Extend;
 use Flarum\User\User;
 use Flarum\Api\Serializer\PostSerializer;
+use Illuminate\Mail\Events\MessageSending;
+use Mshuo\ReplyToSee\Listener\HideContentInMail;
 
 return [
     (new Extend\Frontend('forum'))
@@ -22,4 +24,7 @@ return [
 
     (new Extend\ApiSerializer(PostSerializer::class))
         ->attributes(HideContentPost::class),
+
+    (new Extend\Event())
+        ->listen(MessageSending::class, HideContentInMail::class),
 ];
