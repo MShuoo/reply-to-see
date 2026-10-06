@@ -25,6 +25,13 @@ class HideContentPost
         if (empty($contentHtml) || !str_contains($contentHtml, '[REPLY]')) {
             return $attributes;
         }
+        // 只有楼主的帖子才隐藏。读不到讨论作者时也不隐藏，避免别人手打标签把内容藏起来
+        $discussion = $post->discussion;
+        $starterId = $discussion ? $discussion->user_id : null;
+        if ($starterId === null || (string) $post->user_id !== (string) $starterId) {
+            $attributes['contentHtml'] = $this->stripReplyTags($contentHtml);
+            return $attributes;
+        }
         $themeParseType = $this->settings->get('mshuo-reply-to-see.theme-type-parse', '0');
         $replyType = $this->settings->get('mshuo-reply-to-see.reply-type', '0');
 
