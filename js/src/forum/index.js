@@ -2,8 +2,24 @@ import { extend } from 'flarum/extend';
 import app from 'flarum/forum/app';
 import TextEditor from 'flarum/common/components/TextEditor';
 import TextEditorButton from 'flarum/common/components/TextEditorButton';
+import Post from 'flarum/common/models/Post';
+import refreshHiddenPosts, { discussionIdOf } from './refreshHiddenPosts';
 
 app.initializers.add('mshuo-reply-to-see', () => {
+    // 序列化结果缓存在 store 里，回复成功后必须重拉，隐藏块才会换成正文
+    extend(Post.prototype, 'save', function (promise) {
+        if (this.exists || !app.session.user) return;
+
+        const knownDiscussionId = discussionIdOf(this);
+
+        promise.then((saved) => {
+            const discussionId = discussionIdOf(saved) || knownDiscussionId;
+            if (!discussionId) return;
+
+            return refreshHiddenPosts(discussionId, saved);
+        }).catch(() => {});
+    });
+
     extend(TextEditor.prototype, 'toolbarItems', function (items) {
         const replyType = app.forum.attribute('mshuo-reply-to-see.reply-type') === '1';
         const discussion = this.attrs.composer?.body?.attrs?.discussion ? 0 : 1;
