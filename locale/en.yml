@@ -14,6 +14,7 @@ mshuo-reply-to-see:
       0: First post only (Default, best performance)
       1: All posts
   forum:
+      reply-visible: Reply to view
       must-reply-specific: Reply to unlock
       must-reply-theme: Join the discussion to view
       insert-reply-to-see: Reply to unlock hidden content
