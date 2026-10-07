@@ -2,7 +2,7 @@
 namespace Mshuo\ReplyToSee;
 
 use Flarum\Post\Post;
-use Flarum\Api\Serializer\PostSerializer;
+use Flarum\Api\Serializer\BasicPostSerializer;
 use Flarum\Settings\SettingsRepositoryInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -19,7 +19,7 @@ class HideContentPost
     }
 
     
-    public function __invoke(PostSerializer $serializer, Post $post, array $attributes): array
+    public function __invoke(BasicPostSerializer $serializer, Post $post, array $attributes): array
     {
         $contentHtml = $attributes['contentHtml'] ?? '';
         if (empty($contentHtml) || !str_contains($contentHtml, '[REPLY]')) {
