@@ -52,10 +52,9 @@ class HideContentPost
             return $attributes;
         }
 
-        $actor = $serializer->getActor();
-        $postUserId = $post->user_id !== null ? (int) $post->user_id : null;
-        if ($actor->hasPermission('post.PassReplyToSee') || $this->isAuthor($actor, $postUserId)) {
-            $attributes['contentHtml'] = $this->stripReplyTags($contentHtml);
+        // 已经能直接看见的人保留正文，用框标出隐藏区，不露出 [REPLY] 文字
+        if ($actor->hasPermission('post.PassReplyToSee') || $actor->id === $post->user_id) {
+            $attributes['contentHtml'] = $this->markReplyTags($contentHtml, $this->plainText('mshuo-reply-to-see.forum.reply-visible'));
             return $attributes;
         }
 
@@ -121,12 +120,70 @@ class HideContentPost
         return isset(self::$mentionedPostIds[$key][$postId]);
     }
 
-    /**
-     * 一次查出该用户在本讨论里提及过的帖子。跨讨论提及不算回复。
-     *
-     * @return array<int, true>
-     */
-    private function loadMentionedPostIds(int $discussionId, int $actorId): array
+    private function plainText(string $key): string
+    {
+        return htmlspecialchars(
+            (string) $this->translator->trans($key),
+            ENT_QUOTES | ENT_SUBSTITUTE,
+            'UTF-8'
+        );
+    }
+
+    private function markReplyTags(string $s, string $labelHtml): string
+    {
+        static $openTag = '[REPLY]';
+        static $closeTag = '[/REPLY]';
+        static $openLen = 7;
+        static $closeLen = 8;
+        $len = strlen($s);
+        if ($len === 0 || (strpos($s, $openTag) === false && strpos($s, $closeTag) === false)) {
+            return $s;
+        }
+
+        $result = '';
+        $stack = [];
+        $pos = 0;
+        while ($pos < $len) {
+            $openPos = strpos($s, $openTag, $pos);
+            $closePos = strpos($s, $closeTag, $pos);
+            if ($openPos === false && $closePos === false) {
+                $result .= substr($s, $pos);
+                break;
+            }
+            if ($openPos !== false && ($closePos === false || $openPos < $closePos)) {
+                $result .= substr($s, $pos, $openPos - $pos);
+                $stack[] = strlen($result);
+                $result .= $openTag;
+                $pos = $openPos + $openLen;
+            } else {
+                $result .= substr($s, $pos, $closePos - $pos);
+                if (!empty($stack)) {
+                    $openStart = array_pop($stack);
+                    $inner = substr($result, $openStart + $openLen);
+                    $result = substr($result, 0, $openStart) . $this->wrapMarked($inner, $labelHtml);
+                }
+                $pos = $closePos + $closeLen;
+            }
+        }
+
+        // 未闭合时从内向外包，开始标签文字去掉，结果里不再留下 [REPLY]
+        while (!empty($stack)) {
+            $openStart = array_pop($stack);
+            $inner = substr($result, $openStart + $openLen);
+            $result = substr($result, 0, $openStart) . $this->wrapMarked($inner, $labelHtml);
+        }
+
+        return $result;
+    }
+
+    private function wrapMarked(string $inner, string $labelHtml): string
+    {
+        return '<div class="ReplyToSee-Marked">'
+            . '<div class="ReplyToSee-Marked-label">' . $labelHtml . '</div>'
+            . '<div class="ReplyToSee-Marked-body">' . $inner . '</div>'
+            . '</div>';
+    }
+    private function getMustReplySpecificHtml(): string
     {
         $ids = DB::table('posts')
             ->join('post_mentions_post', 'posts.id', '=', 'post_mentions_post.post_id')
