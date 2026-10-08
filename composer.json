@@ -1,6 +1,6 @@
 {
     "name": "mshuo/reply-to-see",
-    "description": "Hide content until users reply — encourage engagement by revealing hidden posts or media only after replying. ",
+    "description": "Hide content inside [REPLY]...[/REPLY]. Only the discussion starter can hide content. Others can view it after replying.",
     "type": "flarum-extension",
     "keywords": ["flarum", "flarum-extension", "reply", "hide"],
     "license": "MIT",

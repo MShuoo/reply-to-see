@@ -1,6 +1,15 @@
+import { extend } from 'flarum/extend';
 import app from 'flarum/admin/app';
+import ExtensionPage from 'flarum/admin/components/ExtensionPage';
+import extractText from 'flarum/common/utils/extractText';
 
 app.initializers.add('mshuo-reply-to-see', () => {
+    // 扩展页标题下的简介来自 composer.json，这里换成语言包
+    extend(ExtensionPage.prototype, 'oninit', function () {
+        if (!this.extension || this.extension.id !== 'mshuo-reply-to-see') return;
+        this.extension.description = extractText(app.translator.trans('mshuo-reply-to-see.admin.description'));
+    });
+
     let replySelectEl;
     let themeSelectEl;
     const toggleTheme = () => {
