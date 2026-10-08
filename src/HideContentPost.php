@@ -4,12 +4,9 @@ namespace Mshuo\ReplyToSee;
 
 use Flarum\Post\Post;
 use Flarum\Api\Serializer\BasicPostSerializer;
-use Flarum\Api\Serializer\PostSerializer;
 use Flarum\Extension\ExtensionManager;
 use Flarum\Post\CommentPost;
-use Flarum\Post\Post;
 use Flarum\Settings\SettingsRepositoryInterface;
-use Illuminate\Support\Facades\DB;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 class HideContentPost
@@ -27,7 +24,6 @@ class HideContentPost
 
     
     public function __invoke(BasicPostSerializer $serializer, Post $post, array $attributes): array
-    public function __invoke(PostSerializer $serializer, Post $post, array $attributes): array
     {
         $contentHtml = $attributes['contentHtml'] ?? '';
         if (!is_string($contentHtml) || $contentHtml === '' || !str_contains($contentHtml, '[REPLY]')) {
@@ -40,9 +36,6 @@ class HideContentPost
             $attributes['contentHtml'] = $this->stripReplyTags($contentHtml);
             return $attributes;
         }
-        $themeParseType = $this->settings->get('mshuo-reply-to-see.theme-type-parse', '0');
-        $replyType = $this->settings->get('mshuo-reply-to-see.reply-type', '0');
-
         $replyType = (string) $this->settings->get('mshuo-reply-to-see.reply-type', '0');
         $themeParseType = (string) $this->settings->get('mshuo-reply-to-see.theme-type-parse', '0');
 
@@ -52,8 +45,11 @@ class HideContentPost
             return $attributes;
         }
 
+        $actor = $serializer->getActor();
+        $postUserId = $post->user_id !== null ? (int) $post->user_id : null;
+
         // 已经能直接看见的人保留正文，用框标出隐藏区，不露出 [REPLY] 文字
-        if ($actor->hasPermission('post.PassReplyToSee') || $actor->id === $post->user_id) {
+        if ($actor->hasPermission('post.PassReplyToSee') || $this->isAuthor($actor, $postUserId)) {
             $attributes['contentHtml'] = $this->markReplyTags($contentHtml, $this->plainText('mshuo-reply-to-see.forum.reply-visible'));
             return $attributes;
         }
@@ -183,9 +179,15 @@ class HideContentPost
             . '<div class="ReplyToSee-Marked-body">' . $inner . '</div>'
             . '</div>';
     }
-    private function getMustReplySpecificHtml(): string
+    /**
+     * 一次查出该用户在本讨论里提及过的帖子。跨讨论提及不算回复。
+     *
+     * @return array<int, true>
+     */
+    private function loadMentionedPostIds(int $discussionId, int $actorId): array
     {
-        $ids = DB::table('posts')
+        // 不能用 DB 门面：Flarum 不初始化 Laravel facade root，请求内调用会直接抛异常
+        $ids = Post::query()
             ->join('post_mentions_post', 'posts.id', '=', 'post_mentions_post.post_id')
             ->where('posts.discussion_id', $discussionId)
             ->where('posts.user_id', $actorId)

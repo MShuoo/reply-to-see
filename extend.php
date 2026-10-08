@@ -4,8 +4,6 @@ namespace Mshuo\ReplyToSee;
 
 use Flarum\Api\Serializer\BasicPostSerializer;
 use Flarum\Extend;
-use Flarum\User\User;
-use Flarum\Api\Serializer\PostSerializer;
 use Illuminate\Mail\Events\MessageSending;
 use Mshuo\ReplyToSee\Listener\HideContentInMail;
 
