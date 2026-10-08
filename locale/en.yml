@@ -17,3 +17,5 @@ mshuo-reply-to-see:
       must-reply-specific: Reply to unlock
       must-reply-theme: Join the discussion to view
       insert-reply-to-see: Reply to unlock hidden content
+      refresh-failed: Hidden content could not be shown automatically
+      reload: Reload
