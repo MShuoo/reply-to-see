@@ -15,6 +15,9 @@ mshuo-reply-to-see:
       0: 仅限首帖 (默认,性能最好)
       1: 所有帖子
   forum:
+      reply-visible: 回复可见
       must-reply-specific: 回复此内容可见
       must-reply-theme: 参与讨论后可见
       insert-reply-to-see: 回复以查看隐藏内容
+      refresh-failed: 隐藏内容未能自动显示
+      reload: 重新加载
