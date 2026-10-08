@@ -2,9 +2,12 @@
 
 namespace Mshuo\ReplyToSee;
 
+use Flarum\Api\Serializer\BasicPostSerializer;
 use Flarum\Extend;
 use Flarum\User\User;
 use Flarum\Api\Serializer\PostSerializer;
+use Illuminate\Mail\Events\MessageSending;
+use Mshuo\ReplyToSee\Listener\HideContentInMail;
 
 return [
     (new Extend\Frontend('forum'))
@@ -20,6 +23,10 @@ return [
         
     new Extend\Locales(__DIR__ . '/locale'),
 
-    (new Extend\ApiSerializer(PostSerializer::class))
+    // 首帖、末帖走 BasicPostSerializer。只挂子类时，创建讨论的响应会把已去掉的标签盖回去
+    (new Extend\ApiSerializer(BasicPostSerializer::class))
         ->attributes(HideContentPost::class),
+
+    (new Extend\Event())
+        ->listen(MessageSending::class, HideContentInMail::class),
 ];
