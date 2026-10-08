@@ -186,7 +186,7 @@ class HideContentPost
      */
     private function loadMentionedPostIds(int $discussionId, int $actorId): array
     {
-        // 不能用 DB 门面：Flarum 不初始化 Laravel facade root，请求内调用会直接抛异常
+        // 不能用 DB 门面，Flarum 不初始化 Laravel facade root，请求内调用会直接抛异常
         $ids = Post::query()
             ->join('post_mentions_post', 'posts.id', '=', 'post_mentions_post.post_id')
             ->where('posts.discussion_id', $discussionId)
