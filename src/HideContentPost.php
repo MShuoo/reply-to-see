@@ -2,6 +2,8 @@
 
 namespace Mshuo\ReplyToSee;
 
+use Flarum\Post\Post;
+use Flarum\Api\Serializer\BasicPostSerializer;
 use Flarum\Api\Serializer\PostSerializer;
 use Flarum\Extension\ExtensionManager;
 use Flarum\Post\CommentPost;
@@ -23,6 +25,8 @@ class HideContentPost
     ) {
     }
 
+    
+    public function __invoke(BasicPostSerializer $serializer, Post $post, array $attributes): array
     public function __invoke(PostSerializer $serializer, Post $post, array $attributes): array
     {
         $contentHtml = $attributes['contentHtml'] ?? '';
